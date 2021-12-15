@@ -42,7 +42,7 @@ class UsaTrades:
 
     # Paths
     url = "https://apps.bea.gov/itable/iTable.cfm?ReqID=70&step=1&acrdn=1#"
-    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\gdp_data"
+    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\pcpi_data"
     PATH_TO_CHROME = os.getenv('WEBDRIVER_PATH')
 
     logging.basicConfig(
@@ -76,26 +76,33 @@ class UsaTrades:
         chromeOptions.add_experimental_option("prefs", prefs)
         driver = webdriver.Chrome(executable_path=self.PATH_TO_CHROME,
                                   options=chromeOptions)
+        driver.maximize_window()
         logging.info("chrome opened")
         driver.get(self.url)
-        x_path_1 = '//*[@id="tabpanel_22_5532_1_0_70"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_1))).click() # 20 ms of wait time.
-        x_path_2 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[1]/div/select/option[1]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_2))).click() # 20 ms of wait time.
-        x_path_3 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[2]/div/select/option[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_3))).click() # 20 ms of wait time.
+        x_path_1 = '//*[@id="vertical_container_1"]/div[2]/div[1]/a'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_1))).click() # 20 ms of wait time.
 
-        x_path_4 = '//*[@id="goto7"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_4))).click() # 20 ms of wait time.
+        x_path_2 = '//*[@id="tabpanel_22_336_1_0_70"]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_2))).click() # 20 ms of wait time.
 
-        x_path_5 = '//*[@id="myform8"]/div[1]/div/select/option[1]'
+        x_path_3 = '//*[@id="myform7"]/div[1]/div/select/option[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_3))).click() # 20 ms of wait time.
+
+        x_path_4 = '//*[@id="myform7"]/div[2]/div/select/option[4]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_4))).click() # 20 ms of wait time.
+
+        x_path_5 = '//*[@id="goto7"]'
         WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_5))).click() # 20 ms of wait time.
 
-        x_path_12='/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[3]/form/div[1]/div/select/option[2]'
-        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_12))).click()
+        x_path_6 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[3]/form/div[1]/div/select/option[4]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_6))).click() # 20 ms of wait time.
 
-        x_path_8 ="/html/body[@class='apps-bea-gov path-dummynotfoundhtm navbar-is-fixed-top has-glyphicons']/div[@id='main-content']/div[@class='row']/div[@class='col-sm-12 app-itables']/div[@class='region region-content']/div[@id='wraper']/div[@id='xmlWraper']/div[@id='geno']/div[@class='tab-content']/div[@id='panel-8']/form[@id='myform8']/div[@class='form-group row'][4]/div[@class='col-sm-10']/span[@id='goto8']"
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_8))).click() # 20 ms of wait time.
+        x_path_6 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[3]/form/div[1]/div/select/option[3]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_6))).click() # 20 ms of wait time.
+
+        x_path_7 = '//*[@id="goto8"]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_7))).click() # 20 ms of wait time.
+
         x_path_10 = '//*[@id="showDownload"]'
         WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_10))).click() # 20 ms of wait time.
         x_path_11 = '//*[@id="download_wraper"]/div/a[2]'
@@ -107,41 +114,40 @@ class UsaTrades:
     def extract(self):
         """Function to extract the data from the unzipped .csv file."""
         logging.info("Data Extraction Started")
-        extract_df = pd.read_csv(self.FILE_PATH + '/' + 'download.csv')
+        extract_df = pd.read_csv(self.FILE_PATH +'\\download.csv',skiprows=4).dropna()
         return extract_df
 
-    def transform(self, data):
-        logging.info('transformation begins')
-        todays_date = date.today()
-        column_name=[]
-        for i in data.columns[1:4]:
-            column_name.append(i)
-        for i in data.columns[5:]:
-            if int(i.split(':')[0])>todays_date.year-3:
-                column_name.append(i)
-        data=data[column_name]
-        data=data.dropna().drop('LineCode',axis=1)
-        data=data[data['GeoName']!='United States']
-        pd.set_option('display.max_rows', None)
-        data.reset_index(drop=True,inplace=True)
-        state=pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
-        state.rename(columns={'State':'GeoName'},inplace=True)
-        state=state[['GeoName','Region']]
-        process_df=pd.melt(data, id_vars=['GeoName','Description'], var_name='Year-Month', value_name='GDP')
-        process_df=pd.merge(process_df,state,on='GeoName')
-        process_df['Data Element']='GDP'
-        process_df['Frequency']='Quarterly'
-        remove_colon= lambda data:data.replace(':',"").strip()
-        process_df['Year-Month']=process_df['Year-Month'].map(remove_colon)
-        process_df['Year-Month']=pd.to_datetime(process_df['Year-Month'])
-        col_name={'GeoName':'State','Year-Month':'Date','GDP':'Value'}
-        process_df.rename(columns=col_name,inplace=True)
-        process_df = process_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
-        # print(process_df.columns)
-        # process_df.to_csv(self.FILE_PATH+'\gdp_data.csv')
-        # logging.info('transformation ends')
+    def transform(self, process_df):
+        remove_asterik = lambda data : data.split('*')[0].strip()
+        process_df['GeoName'] = process_df['GeoName'].map(remove_asterik)
+        process_df = process_df [process_df['GeoName'] != 'United States']
+        process_df = process_df.drop(['GeoFips'], axis=1)
+        process_df.drop('LineCode',axis=1,inplace=True)
+        melt_df = process_df
+        melt_df = pd.melt(melt_df, id_vars=['GeoName','Description'], var_name= 'Quarter', value_name = "Value")
+        remove_colon = lambda data : data.strip().replace(":", '')
+        melt_df['Quarter'] = melt_df['Quarter'].map(remove_colon)
+        melt_df['Date'] = pd.to_datetime(melt_df['Quarter'])
+        grouped_df = melt_df.groupby(by=["GeoName"])
+        df_3 = pd.DataFrame()
+        for key, item in grouped_df:
+            df_3 = df_3.append(item)
+        df_3.reset_index(drop = True)
+        df_3 = df_3.rename(columns = {'GeoName': 'State'})
+        state_df = pd.read_csv(r"D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv")
+        state_df = state_df[['State', 'Region']]
+        final_df = pd.merge(df_3, state_df, on= 'State')
+        # final_df['Description'] = "Per Capita Personal Income (in dollars)"
+        final_df['Frequency'] = 'Quaterly'
+        final_df = final_df.rename(columns = {'State':'GeoName'})
+        final_df['Data Element'] = "Per Capita Personal Income"
+        col_name={'GeoName':'State'}
+        final_df.rename(columns=col_name,inplace=True)
+        final_df = final_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Description', 'Region']]
+        final_df.to_csv(self.FILE_PATH+'\\pcpi.csv')
+        
 
-        return process_df
+        return final_df
 
 
     def db_conn(self):
@@ -168,8 +174,8 @@ class UsaTrades:
     def main(self):
         logging.info('Scraping data')
         try:
-            pass
-            # self.download()
+            # pass
+            self.download()
         except Exception as error_message:
             logging.info("Downloading the file is failed. The error was: %s", error_message)
             raise RuntimeError("Scraper failed at download")
@@ -202,8 +208,8 @@ def main():
     """
 
     class_init = UsaTrades()
-    # class_init.remove_dir()
-    # class_init.ensure_dir()
+    class_init.remove_dir()
+    class_init.ensure_dir()
     class_init.main()
     # print(class_init.FILE_PATH+'\\'+"Standard Report - Exports.csv")
 
