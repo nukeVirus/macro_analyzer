@@ -107,7 +107,6 @@ class UsaTrades:
     def extract(self):
         """Function to extract the data from the unzipped .csv file."""
         logging.info("Data Extraction Started")
-        logging.info('test1')
         extract_df = pd.read_csv(self.FILE_PATH + '/' + 'download.csv', skiprows=4)
         return extract_df
 
@@ -135,7 +134,13 @@ class UsaTrades:
         remove_colon= lambda data:data.replace(':',"").strip()
         process_df['Year-Month']=process_df['Year-Month'].map(remove_colon)
         process_df['Year-Month']=pd.to_datetime(process_df['Year-Month'])
-        logging.info('transformation ends')
+        col_name={'GeoName':'State','Year-Month':'Date','GDP':'Value'}
+        process_df.rename(columns=col_name,inplace=True)
+        process_df = process_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
+        print(process_df.columns)
+        # process_df.to_csv(self.FILE_PATH+'\gdp_data.csv')
+        # logging.info('transformation ends')
+
         return process_df
 
 
@@ -151,12 +156,9 @@ class UsaTrades:
 
     def load(self, data):
         """Function to load the new data to the database"""
-        sql = 'select * from analyst.tbl_ustrade_time_timestamp'
         try:
-            data_present = pd.read_sql(con=self.db_conn(), sql=sql)
             logging.info('DB instances')
-            logging.info(data_present.columns)
-            data.to_sql('tbl_ustrade_time_timestamp', schema='analyst', con=self.db_conn(),
+            data.to_sql('tbl_macro', schema='analyst', con=self.db_conn(),
                         if_exists='append', chunksize=1000, method='multi', index=False)
             logging.info("Data loaded successfully")
         except Exception as e:
@@ -185,8 +187,8 @@ class UsaTrades:
                     # raise RuntimeError("Scraper failed at dataframe transformation")
                 else:
                     try:
-                        pass
-                        # self.load(data)
+                        # pass
+                        self.load(data)
                     except Exception as error_message:
                         logging.info("Data load in DB failed. The error was: %s", error_message)
                         raise RuntimeError("Scraper failed at upload")

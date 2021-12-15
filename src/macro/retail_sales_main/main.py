@@ -10,11 +10,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from time import sleep
 import subprocess
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-
+import urllib.request
 
 
 load_dotenv()
@@ -43,7 +39,7 @@ class UsaTrades:
     DB_NAME = os.getenv('DB_NAME')
 
     # Paths
-    URL = "https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-region.htm"
+    URL = 'https://www.census.gov/retail/mrts/www/statedata/state_retail_yy.csv'
     FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\cpi_data"
     PATH_TO_CHROME = os.getenv('WEBDRIVER_PATH')
 
@@ -78,41 +74,31 @@ class UsaTrades:
 
     def extract(self):
         """Function to extract the data from the unzipped .csv file."""
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument("--headless")
-        prefs = {"download.default_directory": self.FILE_PATH}
-        chrome_options.add_experimental_option("prefs", prefs)
-        driver = webdriver.Chrome(executable_path = self.PATH_TO_CHROME, options=chrome_options)
-        logging.info("Extraction Started")
-        driver.get(self.URL)
-        x_path = '/html/body/div[2]/div/div/div[5]/div/div[3]/div[2]/a'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path))).click()
-        html_source = driver.page_source
-        driver.quit()
-        return html_source
+        extracted_df=pd.read_csv(self.URL)
+        time.sleep(10)
+        return extracted_df
 
-    def transform(self, html_source):
-        logging.info('transformation begins')
-        df_1 = pd.read_html(html_source)[0]
-        df_1['Month'] = pd.to_datetime(df_1['Month'])
-        df_1['Month'] = (df_1['Month']).astype(str)
-        df_2 = df_1[df_1['Month'].str.split('-').str[0].astype(int)> datetime.now().year - 3]
-        df_2 = df_2.reset_index(drop = True)
-        melt_df = pd.melt(df_2, id_vars = ['Month'], var_name = 'Division', value_name = 'Value')
-        melt_df.rename(columns={'Month': 'Date'}, inplace = True)
-        df_states = pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
-        merge_df = pd.merge(melt_df, df_states, on = 'Division')
-        final_df = merge_df
-        final_df = final_df.drop(['Region', 'State Code'], axis = 1)
-        final_df.rename(columns = {'Division': 'Region'}, inplace = True)
-        final_df['Data Element'] = "Consumer Price Index"
-        final_df['Frequency'] = "Monthly"
-        final_df['Description'] = "Consumer Price Index"
-        final_df = final_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
-        final_df['Date'] = pd.to_datetime(final_df['Date'])
-        remove_modulous = lambda data : data.replace('%', '')
-        final_df['Value'] = final_df['Value'].map(remove_modulous)
+    def transform(self, process_df):
+        process_df = process_df.drop('fips', axis = 1)
+        process_df = process_df[process_df['stateabbr'] != 'USA']
+        process_df = process_df[process_df['naics'] == 'TOTAL'].reset_index(drop = True)
+        process_df = process_df.drop(['naics'], axis = 1)
+        process_df = process_df.rename(columns = {'stateabbr': 'State Code'})
+        state_df = pd.read_excel(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\State_Lookup.xlsx')
+        state_df = state_df[['State', 'State Code', 'Region']]
+        df_merge = pd.merge(process_df, state_df, on = 'State Code')
+        df_merge = df_merge.drop(['State Code'], axis=1)
+        melt_df = pd.melt(df_merge, id_vars=['State', 'Region'], var_name='Date', value_name='Value')
+        remove_yy = lambda data : data.split('y')[-1]
+        add_hyphen = lambda data : data[0:4] + "-" + data[4:]
+        melt_df['Date'] = melt_df['Date'].map(remove_yy).map(add_hyphen)
+        melt_df['Date'] = pd.to_datetime(melt_df['Date'])
+        melt_df['Data Element'] = "RETAIL SALES"
+        melt_df['Description'] = "AVERAGE RETAIL SALES"
+        melt_df['Frequency'] = "MONTHLY"
+        final_df = melt_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
         final_df['Value'] = final_df['Value'].astype(float)
+        final_df.to_csv(self.FILE_PATH+'\\retail_sales.csv')
         return final_df
 
 
@@ -143,30 +129,25 @@ class UsaTrades:
     def main(self):
         logging.info('Scraping data')
         try:
-            pass
-            # self.download()
+            extracted_data=self.extract()
         except Exception as error_message:
-            logging.info("Downloading the file is failed. The error was: %s", error_message)
+            logging.info("loading file is failed. The error was: %s", error_message)
             raise RuntimeError("Scraper failed at download")
         else:
             try:
-                extracted_data=self.extract()
+                data = self.transform(extracted_data)
             except Exception as error_message:
-                logging.info("loading file is failed. The error was: %s", error_message)
-                raise RuntimeError("Scraper failed at download")
+                logging.info("Data Transformation failed. The error was: %s", error_message)
+                # raise RuntimeError("Scraper failed at dataframe transformation")
             else:
                 try:
-                    data = self.transform(extracted_data)
+                    # pass
+                    self.load(data)
                 except Exception as error_message:
-                    logging.info("Data Transformation failed. The error was: %s", error_message)
-                    # raise RuntimeError("Scraper failed at dataframe transformation")
-                else:
-                    try:
-                        # pass
-                        self.load(data)
-                    except Exception as error_message:
-                        logging.info("Data load in DB failed. The error was: %s", error_message)
-                        raise RuntimeError("Scraper failed at upload")
+                    logging.info("Data load in DB failed. The error was: %s", error_message)
+                    raise RuntimeError("Scraper failed at upload")
+
+
 
 
 def main():
@@ -177,8 +158,8 @@ def main():
     """
 
     class_init = UsaTrades()
-    # class_init.remove_dir()
-    # class_init.ensure_dir()
+    class_init.remove_dir()
+    class_init.ensure_dir()
     class_init.main()
     # print(class_init.FILE_PATH+'\\'+"Standard Report - Exports.csv")
 
