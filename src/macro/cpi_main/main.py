@@ -128,11 +128,8 @@ class UsaTrades:
 
     def load(self, data):
         """Function to load the new data to the database"""
-        sql = 'select * from analyst.tbl_ustrade_time_timestamp'
         try:
-            data_present = pd.read_sql(con=self.db_conn(), sql=sql)
             logging.info('DB instances')
-            logging.info(data_present.columns)
             data.to_sql('tbl_macro', schema='analyst', con=self.db_conn(),
                         if_exists='append', chunksize=1000, method='multi', index=False)
             logging.info("Data loaded successfully")

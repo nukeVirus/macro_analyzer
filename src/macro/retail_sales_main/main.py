@@ -40,7 +40,7 @@ class UsaTrades:
 
     # Paths
     URL = 'https://www.census.gov/retail/mrts/www/statedata/state_retail_yy.csv'
-    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\cpi_data"
+    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\\retail_sales_data"
     PATH_TO_CHROME = os.getenv('WEBDRIVER_PATH')
 
 
@@ -98,7 +98,7 @@ class UsaTrades:
         melt_df['Frequency'] = "MONTHLY"
         final_df = melt_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
         final_df['Value'] = final_df['Value'].astype(float)
-        final_df.to_csv(self.FILE_PATH+'\\retail_sales.csv')
+        # final_df.to_csv(self.FILE_PATH+'\\retail_sales.csv')
         return final_df
 
 

@@ -41,8 +41,8 @@ class UsaTrades:
     DB_NAME = os.getenv('DB_NAME')
 
     # Paths
-    url = "https://apps.bea.gov/itable/iTable.cfm?ReqID=70&step=1&acrdn=1#"
-    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\gdp_data"
+    url = 'https://www2.census.gov/programs-surveys/popest/datasets/2010-2020/state/totals/nst-est2020.csv'
+    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\population_data"
     PATH_TO_CHROME = os.getenv('WEBDRIVER_PATH')
 
     logging.basicConfig(
@@ -78,70 +78,38 @@ class UsaTrades:
                                   options=chromeOptions)
         logging.info("chrome opened")
         driver.get(self.url)
-        x_path_1 = '//*[@id="tabpanel_22_5532_1_0_70"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_1))).click() # 20 ms of wait time.
-        x_path_2 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[1]/div/select/option[1]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_2))).click() # 20 ms of wait time.
-        x_path_3 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[2]/div/select/option[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_3))).click() # 20 ms of wait time.
-
-        x_path_4 = '//*[@id="goto7"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_4))).click() # 20 ms of wait time.
-
-        x_path_5 = '//*[@id="myform8"]/div[1]/div/select/option[1]'
-        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_5))).click() # 20 ms of wait time.
-
-        x_path_12='/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[3]/form/div[1]/div/select/option[2]'
-        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_12))).click()
-
-        x_path_8 ="/html/body[@class='apps-bea-gov path-dummynotfoundhtm navbar-is-fixed-top has-glyphicons']/div[@id='main-content']/div[@class='row']/div[@class='col-sm-12 app-itables']/div[@class='region region-content']/div[@id='wraper']/div[@id='xmlWraper']/div[@id='geno']/div[@class='tab-content']/div[@id='panel-8']/form[@id='myform8']/div[@class='form-group row'][4]/div[@class='col-sm-10']/span[@id='goto8']"
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_8))).click() # 20 ms of wait time.
-        x_path_10 = '//*[@id="showDownload"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_10))).click() # 20 ms of wait time.
-        x_path_11 = '//*[@id="download_wraper"]/div/a[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_11))).click()
-        time.sleep(20)
+        time.sleep(15)
         driver.quit()
-        logging.info('colsed')
 
     def extract(self):
         """Function to extract the data from the unzipped .csv file."""
         logging.info("Data Extraction Started")
-        extract_df = pd.read_csv(self.FILE_PATH + '/' + 'download.csv',skiprows=4)
+        extract_df = pd.read_csv(self.FILE_PATH + '\\nst-est2020.csv')
         return extract_df
 
-    def transform(self, data):
+    def transform(self, process_df):
         logging.info('transformation begins')
-        todays_date = date.today()
-        column_name=[]
-        for i in data.columns[1:4]:
-            column_name.append(i)
-        for i in data.columns[5:]:
-            if int(i.split(':')[0])>todays_date.year-3:
-                column_name.append(i)
-        data=data[column_name]
-        data=data.dropna().drop('LineCode',axis=1)
-        data=data[data['GeoName']!='United States']
-        pd.set_option('display.max_rows', None)
-        data.reset_index(drop=True,inplace=True)
-        state=pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
-        state.rename(columns={'State':'GeoName'},inplace=True)
-        state=state[['GeoName','Region']]
-        process_df=pd.melt(data, id_vars=['GeoName','Description'], var_name='Year-Month', value_name='GDP')
-        process_df=pd.merge(process_df,state,on='GeoName')
-        process_df['Data Element']='GDP'
-        process_df['Frequency']='Quarterly'
-        remove_colon= lambda data:data.replace(':',"").strip()
-        process_df['Year-Month']=process_df['Year-Month'].map(remove_colon)
-        process_df['Year-Month']=pd.to_datetime(process_df['Year-Month'])
-        col_name={'GeoName':'State','Year-Month':'Date','GDP':'Value'}
-        process_df.rename(columns=col_name,inplace=True)
-        process_df = process_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
-        # print(process_df.columns)
-        # process_df.to_csv(self.FILE_PATH+'\gdp_data.csv')
-        # logging.info('transformation ends')
+        
+        process_df.loc[0:4]
+        process_df = process_df.drop(process_df.index[0:5])
+        process_df = process_df.reset_index(drop = True)
+        df_2 = process_df[['NAME', 'POPESTIMATE2015', 'POPESTIMATE2016', 'POPESTIMATE2017', 'POPESTIMATE2018', 'POPESTIMATE2019', 'POPESTIMATE2020']]
+        df_2 = pd.melt(df_2, id_vars=['NAME'], var_name='Date', value_name='Value')
+        remove_popestimate = lambda data : data.replace('POPESTIMATE', '')
+        df_2['Date'] = df_2['Date'].map(remove_popestimate)
+        df_2['Date'] = pd.to_datetime(df_2['Date'])
+        df_2.rename(columns = {'NAME':'State'}, inplace = True)
+        df_states = pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
+        df_states = df_states[['State', 'Region']]
+        df_merge = pd.merge(df_2, df_states, on = 'State')
+        df_merge['Frequency'] = 'Yearly'
+        df_merge['Description'] = 'POPULATION'
+        df_merge['Data Element'] = 'POPULATION'
+        df_merge.rename(columns = {'GeoName':'State'}, inplace = True)
+        df_final = df_merge[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
 
-        return process_df
+
+        return df_final
 
 
     def db_conn(self):
