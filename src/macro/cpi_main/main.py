@@ -174,8 +174,8 @@ def main():
     """
 
     class_init = UsaTrades()
-    # class_init.remove_dir()
-    # class_init.ensure_dir()
+    class_init.remove_dir()
+    class_init.ensure_dir()
     class_init.main()
     # print(class_init.FILE_PATH+'\\'+"Standard Report - Exports.csv")
 

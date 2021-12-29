@@ -1,6 +1,6 @@
 import os
-import time
-from datetime import date
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 import pandas as pd
 import shutil
 import logging
@@ -8,6 +8,7 @@ import argparse
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from time import sleep
+from datetime import datetime
 import subprocess
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -41,8 +42,8 @@ class UsaTrades:
     DB_NAME = os.getenv('DB_NAME')
 
     # Paths
-    url = "https://apps.bea.gov/itable/iTable.cfm?ReqID=70&step=1&acrdn=1#"
-    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\gdp_data"
+    url = "https://www.bls.gov/lau/#tables"
+    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\\unemployment_data"
     PATH_TO_CHROME = os.getenv('WEBDRIVER_PATH')
 
     logging.basicConfig(
@@ -78,70 +79,98 @@ class UsaTrades:
                                   options=chromeOptions)
         logging.info("chrome opened")
         driver.get(self.url)
-        x_path_1 = '//*[@id="tabpanel_22_5532_1_0_70"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_1))).click() # 20 ms of wait time.
-        x_path_2 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[1]/div/select/option[1]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_2))).click() # 20 ms of wait time.
-        x_path_3 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[2]/div/select/option[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_3))).click() # 20 ms of wait time.
+        x_path_2 = '//*[@id="main-content-td"]/div[4]/table[1]/tbody/tr[2]/td[6]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_2))).click()
 
-        x_path_4 = '//*[@id="goto7"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_4))).click() # 20 ms of wait time.
+        x_path_3 = '//*[@id="bodytext"]/form[1]/p[1]/select/option[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_3))).click()
 
-        x_path_5 = '//*[@id="myform8"]/div[1]/div/select/option[1]'
-        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_5))).click() # 20 ms of wait time.
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).perform()
 
-        x_path_12='/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[3]/form/div[1]/div/select/option[2]'
+        x_path_4 = '//*[@id="bodytext"]/form[1]/p[2]/input[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_4))).click()
+
+        x_path_5 = '//*[@id="bodytext"]/form[1]/p[1]/select/option[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_5))).click()
+
+        x_path_6 = '//*[@id="bodytext"]/form[1]/p[2]/input[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_6))).click()
+
+        x_path_7 = '//*[@id="bodytext"]/form[1]/p[1]/select/option[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_7))).click()
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).perform()
+
+        x_path_8 = '//*[@id="bodytext"]/form[1]/p[2]/input[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_8))).click()
+
+        x_path_9 = '//*[@id="bodytext"]/form[1]/p[1]/select/option[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_9))).click()
+
+        x_path_10 = '//*[@id="bodytext"]/form[1]/p[2]/input[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_10))).click()
+
+        x_path_11 = '//*[@id="bodytext"]/form/p[1]/input[2]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_11))).click()
+
+        x_path_12 = '//*[@id="bodytext"]/form/p[2]/input[1]'
         WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_12))).click()
 
-        x_path_8 ="/html/body[@class='apps-bea-gov path-dummynotfoundhtm navbar-is-fixed-top has-glyphicons']/div[@id='main-content']/div[@class='row']/div[@class='col-sm-12 app-itables']/div[@class='region region-content']/div[@id='wraper']/div[@id='xmlWraper']/div[@id='geno']/div[@class='tab-content']/div[@id='panel-8']/form[@id='myform8']/div[@class='form-group row'][4]/div[@class='col-sm-10']/span[@id='goto8']"
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_8))).click() # 20 ms of wait time.
-        x_path_10 = '//*[@id="showDownload"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_10))).click() # 20 ms of wait time.
-        x_path_11 = '//*[@id="download_wraper"]/div/a[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_11))).click()
-        time.sleep(20)
+        x_path_13 = '//*[@id="bodytext"]/form/font/p[2]/input[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_13))).click()
+
+        x_path_14 = '//*[@id="from-year"]/option[43]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_14))).click()
+
+        x_path_15 = '//*[@id="bodytext"]/div[1]/form/span[1]/span[2]/input'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_15))).click()
+
+        x_path_16 = '//*[@id="bodytext"]/div[1]/form/span[2]/span[3]/input'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_16))).click()
+
+        x_path_17 = '//*[@id="select-output-type"]/option[3]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_17))).click()
+
+        x_path_18 = '//*[@id="bodytext"]/form/input[1]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_18))).click()
+
+        x_path_18 = '//*[@id="download_xlsx0"]'
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_18))).click()
+
+        sleep(10)
         driver.quit()
-        logging.info('colsed')
 
     def extract(self):
         """Function to extract the data from the unzipped .csv file."""
         logging.info("Data Extraction Started")
-        extract_df = pd.read_csv(self.FILE_PATH +'\\download.csv',skiprows=4)
+        extract_df = pd.read_excel(self.FILE_PATH + '\\'+os.listdir(self.FILE_PATH)[0],skiprows=3)
         return extract_df
 
     def transform(self, data):
         logging.info('transformation begins')
-        todays_date = date.today()
-        column_name=[]
-        for i in data.columns[1:4]:
-            column_name.append(i)
-        for i in data.columns[5:]:
-            if int(i.split(':')[0])>todays_date.year-3:
-                column_name.append(i)
-        data=data[column_name]
-        data=data.dropna().drop('LineCode',axis=1)
-        data=data[data['GeoName']!='United States']
-        pd.set_option('display.max_rows', None)
-        data.reset_index(drop=True,inplace=True)
-        state=pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
-        state.rename(columns={'State':'GeoName'},inplace=True)
-        state=state[['GeoName','Region']]
-        process_df=pd.melt(data, id_vars=['GeoName','Description'], var_name='Year-Month', value_name='GDP')
-        process_df=pd.merge(process_df,state,on='GeoName')
-        process_df['Data Element']='GDP'
-        process_df['Frequency']='Quarterly'
-        remove_colon= lambda data:data.replace(':',"").strip()
-        process_df['Year-Month']=process_df['Year-Month'].map(remove_colon)
-        process_df['Year-Month']=pd.to_datetime(process_df['Year-Month'])
-        col_name={'GeoName':'State','Year-Month':'Date','GDP':'Value'}
-        process_df.rename(columns=col_name,inplace=True)
-        process_df = process_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
-        # print(process_df.columns)
-        # process_df.to_csv(self.FILE_PATH+'\gdp_data.csv')
-        # logging.info('transformation ends')
+        data.columns = data.columns.str.replace("[\n]", " ")
+        data.drop(data.columns[[-3,-2,-1]], axis=1, inplace=True)
+        df1=data.melt('Series ID', value_name='Unemploymentrate', var_name='Year')
+        df= pd.read_excel(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\state and series id.xlsx')
+        unemployment_rate = pd.merge(df1[['Series ID','Year','Unemploymentrate']],df[['SERIES ID','STATE']],left_on='Series ID',right_on='SERIES ID',how='left')
+        unemployment_rate = unemployment_rate.drop(labels=['SERIES ID','Series ID'], axis=1)
+        unemployment_rate['Year'] = pd.to_datetime(unemployment_rate['Year'].apply(lambda x: datetime.strptime(x, '%b %Y')))
+        unemployment_rate['Year'] = pd.to_datetime(unemployment_rate['Year']).dt.date
 
-        return process_df
+        unemployment_rate.rename(columns={'STATE':'State','Unemploymentrate':'Value','Year':'Date'},inplace=True)
+        df_states = pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
+        merge_df = pd.merge(unemployment_rate, df_states, on = 'State')
+        final_df = merge_df
+        final_df = final_df.drop(['Region', 'State Code'], axis = 1)
+        final_df.rename(columns = {'Division': 'Region'}, inplace = True)
+        final_df['Data Element'] = "Consumer Price Index"
+        final_df['Frequency'] = "Monthly"
+        final_df['Description'] = "Consumer Price Index"
+        final_df = final_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
+        final_df['Date'] = pd.to_datetime(final_df['Date'])
+        final_df
+
+        final_df.to_csv('population.csv',index=None)
+        return final_df
 
 
     def db_conn(self):
@@ -178,7 +207,7 @@ class UsaTrades:
                 extracted_data=self.extract()
             except Exception as error_message:
                 logging.info("loading file is failed. The error was: %s", error_message)
-                raise RuntimeError("Scraper failed at download")
+                raise RuntimeError("Scraper failed at extraction")
             else:
                 try:
                     data = self.transform(extracted_data)

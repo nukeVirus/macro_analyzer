@@ -41,8 +41,8 @@ class UsaTrades:
     DB_NAME = os.getenv('DB_NAME')
 
     # Paths
-    url = "https://apps.bea.gov/itable/iTable.cfm?ReqID=70&step=1&acrdn=1#"
-    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\gdp_data"
+    url = "https://www.census.gov/housing/hvs/data/rates.html"
+    FILE_PATH = os.getenv('DOWNLOAD_PATH') + "\housing_data"
     PATH_TO_CHROME = os.getenv('WEBDRIVER_PATH')
 
     logging.basicConfig(
@@ -78,69 +78,74 @@ class UsaTrades:
                                   options=chromeOptions)
         logging.info("chrome opened")
         driver.get(self.url)
-        x_path_1 = '//*[@id="tabpanel_22_5532_1_0_70"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_1))).click() # 20 ms of wait time.
-        x_path_2 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[1]/div/select/option[1]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_2))).click() # 20 ms of wait time.
-        x_path_3 = '/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[2]/form/div[2]/div/select/option[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_3))).click() # 20 ms of wait time.
-
-        x_path_4 = '//*[@id="goto7"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_4))).click() # 20 ms of wait time.
-
-        x_path_5 = '//*[@id="myform8"]/div[1]/div/select/option[1]'
-        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_5))).click() # 20 ms of wait time.
-
-        x_path_12='/html/body/div[1]/div[2]/div/div/div[2]/div/div[3]/div/div[3]/form/div[1]/div/select/option[2]'
-        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_12))).click()
-
-        x_path_8 ="/html/body[@class='apps-bea-gov path-dummynotfoundhtm navbar-is-fixed-top has-glyphicons']/div[@id='main-content']/div[@class='row']/div[@class='col-sm-12 app-itables']/div[@class='region region-content']/div[@id='wraper']/div[@id='xmlWraper']/div[@id='geno']/div[@class='tab-content']/div[@id='panel-8']/form[@id='myform8']/div[@class='form-group row'][4]/div[@class='col-sm-10']/span[@id='goto8']"
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_8))).click() # 20 ms of wait time.
-        x_path_10 = '//*[@id="showDownload"]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_10))).click() # 20 ms of wait time.
-        x_path_11 = '//*[@id="download_wraper"]/div/a[2]'
-        WebDriverWait(driver,100).until(EC.element_to_be_clickable((By.XPATH, x_path_11))).click()
-        time.sleep(20)
+        driver.execute_script("window.scrollTo(0, 400)")
+        x_path_1="/html/body/div[1]/div[3]/div/div[1]/div[2]/div/div[1]/ul/li[3]/a"
+        WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH, x_path_1))).click() # 20 ms of wait time.
+        sleep(15)
         driver.quit()
-        logging.info('colsed')
 
     def extract(self):
         """Function to extract the data from the unzipped .csv file."""
         logging.info("Data Extraction Started")
-        extract_df = pd.read_csv(self.FILE_PATH +'\\download.csv',skiprows=4)
+        extract_df = pd.read_excel(self.FILE_PATH + '\\tab3_state05_2021_hmr.xlsx',skiprows=3)
         return extract_df
 
     def transform(self, data):
         logging.info('transformation begins')
-        todays_date = date.today()
-        column_name=[]
-        for i in data.columns[1:4]:
-            column_name.append(i)
-        for i in data.columns[5:]:
-            if int(i.split(':')[0])>todays_date.year-3:
-                column_name.append(i)
-        data=data[column_name]
-        data=data.dropna().drop('LineCode',axis=1)
-        data=data[data['GeoName']!='United States']
-        pd.set_option('display.max_rows', None)
+        l1 = data.columns
+        l1[3].split()[-1]
+        data_col_names = {}
+        j=1
+        for i in range(0, len(l1)):
+            if j <= 7:
+                data_col_names[l1[j]]=l1[j].split()[-1]+'-Q'+str(i+1)
+                j += 2
+        data.rename(columns=data_col_names,inplace=True)
+        data=data[['State','2021-Q1','2021-Q2','2021-Q3','2021-Q4']]
+        data=data.dropna(thresh=2)
+        remove_dot_space = lambda x: str(x).replace('.',"").strip()
+        data['State']=data['State'].map(remove_dot_space)
         data.reset_index(drop=True,inplace=True)
+        split_no=data[data['State']=='State'].index
+        df_1 = data.iloc[:51]
+        df_2= data.iloc[51:103]
+        df_3= data.iloc[103:155]
+        df_2.columns = df_2.iloc[0]
+        df_3.columns = df_3.iloc[0]
+        l1=df_2.columns
+        data_col_names_2={}
+        j=1
+        for i in range(0,len(l1)):
+            if(i!=0):
+                data_col_names_2[l1[i]]=l1[i].split()[-1]+'-Q'+str(i)
+        df_2.rename(columns=data_col_names_2,inplace=True)
+        l1=df_3.columns
+        data_col_names_3={}
+        j=1
+        for i in range(0,len(l1)):
+            if(i!=0):
+                data_col_names_3[l1[i]]=l1[i].split()[-1]+'-Q'+str(i)
+        df_3.rename(columns=data_col_names_3,inplace=True)
+        df_2=df_2[1:]
+        df_3=df_3[1:]
+        df_1.reset_index(drop=True,inplace= True)
+        df_2.reset_index(drop=True,inplace= True)
+        df_3.reset_index(drop=True,inplace= True)
+        df_2=df_2.rename_axis(None, axis=1)
+        df_3=df_3.rename_axis(None, axis=1)
+        temp_df=pd.merge(df_1,df_2,on="State",how='inner')
+        absolute_df=pd.merge(temp_df,df_3,on="State",how='inner')
+        melt_df1 = pd.melt(absolute_df, id_vars=['State'], var_name = 'Year', value_name = 'housing')
+        melt_df1['date']=pd.to_datetime(melt_df1['Year'])
         state=pd.read_csv(r'D:\BYTEIQ\Macro Analyser USA\DOWNLOADED_DATA\states.csv')
-        state.rename(columns={'State':'GeoName'},inplace=True)
-        state=state[['GeoName','Region']]
-        process_df=pd.melt(data, id_vars=['GeoName','Description'], var_name='Year-Month', value_name='GDP')
-        process_df=pd.merge(process_df,state,on='GeoName')
-        process_df['Data Element']='GDP'
-        process_df['Frequency']='Quarterly'
-        remove_colon= lambda data:data.replace(':',"").strip()
-        process_df['Year-Month']=process_df['Year-Month'].map(remove_colon)
-        process_df['Year-Month']=pd.to_datetime(process_df['Year-Month'])
-        col_name={'GeoName':'State','Year-Month':'Date','GDP':'Value'}
-        process_df.rename(columns=col_name,inplace=True)
-        process_df = process_df[['State', 'Data Element', 'Date', 'Value', 'Frequency', 'Region', 'Description']]
-        # print(process_df.columns)
-        # process_df.to_csv(self.FILE_PATH+'\gdp_data.csv')
-        # logging.info('transformation ends')
-
+        state=state[['State','Region']]
+        process_df=pd.merge(state,melt_df1,on='State')
+        process_df.rename(columns={'State':'GeoName','housing':'Value','date':'Date'},inplace=True)
+        process_df['Data Element']='HOUSING'
+        process_df['Frequency']='QUARTERLY'
+        process_df['Description']='HOUSING DATA'
+        process_df=process_df[['GeoName','Data Element','Date','Value','Frequency','Description','Region']]
+        process_df.to_csv('population.csv',index=None)
         return process_df
 
 
@@ -168,8 +173,8 @@ class UsaTrades:
     def main(self):
         logging.info('Scraping data')
         try:
-            # pass
-            self.download()
+            pass
+            # self.download()
         except Exception as error_message:
             logging.info("Downloading the file is failed. The error was: %s", error_message)
             raise RuntimeError("Scraper failed at download")
@@ -178,7 +183,7 @@ class UsaTrades:
                 extracted_data=self.extract()
             except Exception as error_message:
                 logging.info("loading file is failed. The error was: %s", error_message)
-                raise RuntimeError("Scraper failed at download")
+                raise RuntimeError("Scraper failed at extraction")
             else:
                 try:
                     data = self.transform(extracted_data)
@@ -202,8 +207,8 @@ def main():
     """
 
     class_init = UsaTrades()
-    class_init.remove_dir()
-    class_init.ensure_dir()
+    # class_init.remove_dir()
+    # class_init.ensure_dir()
     class_init.main()
     # print(class_init.FILE_PATH+'\\'+"Standard Report - Exports.csv")
 
